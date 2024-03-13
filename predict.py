@@ -78,26 +78,39 @@ def process_video(pairs, predictor, output_dir):
         width = int(video_in.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(video_in.get(cv2.CAP_PROP_FRAME_HEIGHT))
         total_frame_num = int(video_in.get(cv2.CAP_PROP_FRAME_COUNT))
-        video_out = cv2.VideoWriter(output_filepath, cv2.VideoWriter_fourcc(*'MP4V'), fps, (width, height))
+        # video_out = cv2.VideoWriter(output_filepath, cv2.VideoWriter_fourcc(*'MP4V'), fps, (width, height))
+        video_out = cv2.VideoWriter(output_filepath, cv2.VideoWriter_fourcc(*'MP4V'), fps, (width * 2, height))
         tqdm.write(f'process {video_filepath} to {output_filepath}, {fps}fps, resolution: {width}x{height}')
+        
         for frame_num in tqdm(range(total_frame_num), desc=video_filename):
             res, img = video_in.read()
             if not res:
                 break
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            pred = predictor(img, mask)
+            
+            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            
+            pred = predictor(img_rgb, mask)
             pred = cv2.cvtColor(pred, cv2.COLOR_RGB2BGR)
-            video_out.write(pred)
+            # cv2.imshow('img', img)
+            # cv2.imshow('pred', pred)
+            
+            save_frame = cv2.hconcat([img, pred])
+            cv2.imshow('save_frame', save_frame)
+            cv2.waitKey(5)
+            video_out.write(save_frame)
 
 def main(img_pattern: str,
          mask_pattern: Optional[str] = None,
-         weights_path='best_fpn.h5',
+         weights_path='./best_fpn_old.h5',
          out_dir='submit/',
          side_by_side: bool = False,
          video: bool = False, cuda: bool= True):
     def sorted_glob(pattern):
         return sorted(glob(pattern))
-
+    
+    print(img_pattern)
+    # video = True
+    
     imgs = sorted_glob(img_pattern)
     masks = sorted_glob(mask_pattern) if mask_pattern is not None else [None for _ in imgs]
     pairs = zip(imgs, masks)
@@ -125,4 +138,5 @@ def main(img_pattern: str,
 
 
 if __name__ == '__main__':
-    Fire(main)
+    Fire(main) #, 'asd.avi')
+    # Fire(main, 'test_image/night.png')
